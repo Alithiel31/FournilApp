@@ -6,7 +6,7 @@
 
 <h1>Recettes</h1>
 <div class="pills">
-  {#each data.recettes as r, i}
+  {#each data.recettes as r, i (r.id)}
     <button class:active={i === active} onclick={() => (active = i)}>{r.pate.nom}</button>
   {/each}
 </div>
@@ -19,7 +19,7 @@
       <span class="meta">base {fmt(r.base)} g · 🔒 lecture seule</span>
     </div>
     <div class="corps">
-      {#each r.lignes as l}
+      {#each r.lignes as l (l.ingredient)}
         <div class="ligne">
           <span>{l.ingredient}</span>
           <span class="num">{fmt(l.quantite)} g</span>

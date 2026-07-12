@@ -1,2 +1,4 @@
 import { redirect } from '@sveltejs/kit';
-export const load = () => { throw redirect(307, '/production/lundi'); };
+export const load = () => {
+  throw redirect(307, '/production/lundi');
+};

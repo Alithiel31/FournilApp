@@ -5,12 +5,12 @@
  */
 import { env } from '$env/dynamic/private';
 
-const BASE = env.API_URL ?? 'http://localhost:3001';
+export const API_BASE = env.API_URL ?? 'http://localhost:3001';
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { 'content-type': 'application/json', ...init?.headers }
+    headers: { 'content-type': 'application/json', ...init?.headers },
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');

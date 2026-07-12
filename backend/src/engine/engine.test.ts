@@ -21,9 +21,11 @@ describe('arithmétique et fonctions de base', () => {
 
   it('SUM sur plage et CEILING', () => {
     const r = calc({
-      'F!A1': { v: 100 }, 'F!A2': { v: 200 }, 'F!A3': { v: 33 },
+      'F!A1': { v: 100 },
+      'F!A2': { v: 200 },
+      'F!A3': { v: 33 },
       'F!B1': { f: 'SUM(A1:A3)' },
-      'F!B2': { f: 'CEILING(B1,50)' }
+      'F!B2': { f: 'CEILING(B1,50)' },
     });
     expect(r['F!B1']).toBe(333);
     expect(r['F!B2']).toBe(350);
@@ -40,7 +42,7 @@ describe('références inter-feuilles et INDEX/MATCH', () => {
   it('résout une référence vers une autre feuille (nom avec espace)', () => {
     const cells: CellMap = {
       'Poids patons unité!B2': { v: 350 },
-      'Jour!A1': { f: "'Poids patons unité'!B2*3" }
+      'Jour!A1': { f: "'Poids patons unité'!B2*3" },
     };
     const a = analyzeWorkbook(cells, ['Poids patons unité', 'Jour']);
     const r = computeAll(cells, a.formulas).results;
@@ -49,9 +51,11 @@ describe('références inter-feuilles et INDEX/MATCH', () => {
 
   it('INDEX/MATCH insensible à la casse (Gros campagne vs Gros Campagne)', () => {
     const cells: CellMap = {
-      'C!A1': { v: 'Baguette' }, 'C!B1': { v: 12 },
-      'C!A2': { v: 'Gros Campagne' }, 'C!B2': { v: 7 },
-      'J!A1': { f: "INDEX(C!B1:B2,MATCH(\"gros campagne\",C!A1:A2,0))" }
+      'C!A1': { v: 'Baguette' },
+      'C!B1': { v: 12 },
+      'C!A2': { v: 'Gros Campagne' },
+      'C!B2': { v: 7 },
+      'J!A1': { f: 'INDEX(C!B1:B2,MATCH("gros campagne",C!A1:A2,0))' },
     };
     const a = analyzeWorkbook(cells, ['C', 'J']);
     const r = computeAll(cells, a.formulas).results;

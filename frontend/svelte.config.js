@@ -6,6 +6,6 @@ export default {
   preprocess: vitePreprocess(),
   kit: {
     adapter: adapter(),
-    serviceWorker: { register: false } // géré par @vite-pwa/sveltekit
-  }
+    serviceWorker: { register: false }, // géré par @vite-pwa/sveltekit
+  },
 };

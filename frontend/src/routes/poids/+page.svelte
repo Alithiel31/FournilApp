@@ -7,7 +7,7 @@
 <h1>Poids unitaires</h1>
 <div class="table">
   <div class="head"><span>Produit</span><span>Pâte</span><span>Garniture</span></div>
-  {#each data.produits.filter((p) => p.poidsPate !== null) as p}
+  {#each data.produits.filter((p) => p.poidsPate !== null) as p (p.id)}
     <div class="row">
       <span class="nom">{p.nom}</span>
       <span class="num">{fmt(p.poidsPate ?? 0)} g</span>

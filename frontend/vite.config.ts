@@ -19,8 +19,13 @@ export default defineConfig({
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
-        ]
+          {
+            src: '/icon-512-maskable.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
       },
       workbox: {
         // offline-first : recettes et poids consultables sans réseau en fournil
@@ -29,11 +34,10 @@ export default defineConfig({
           {
             urlPattern: /\/api\/(recettes|poids)/,
             handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'donnees-referentiel' }
-          }
-        ]
-      }
-    })
+            options: { cacheName: 'donnees-referentiel' },
+          },
+        ],
+      },
+    }),
   ],
-  test: { include: ['src/**/*.test.ts'] }
 });

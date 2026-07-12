@@ -11,14 +11,15 @@
  */
 
 import * as XLSX from 'xlsx';
-import { analyzeWorkbook, computeAll, makeKey, type CellMap } from '../engine/engine';
+import { analyzeWorkbook, computeAll, makeKey, type CellMap } from '../engine/engine.js';
 
 /* ---------------- Rapprochement flou des noms ---------------- */
 
 export function normalize(s: string): string {
   return String(s)
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // accents
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // accents
     .replace(/\b(au|aux|de|des|du|le|la|les|a)\b/g, ' ')
     .replace(/[-'’]/g, ' ')
     .replace(/s\b/g, '') // pluriels simples
@@ -107,11 +108,17 @@ export function extractModel(wb: XLSX.WorkBook): ImportModel {
   for (let i = 0; i < Math.min(cmdRows.length, 10); i++) {
     const cols: typeof dayCols = [];
     cmdRows[i].forEach((v, ci) => {
-      if (typeof v === 'string' && DAY_WORDS.includes(normalize(v))) cols.push({ ci, jour: normalize(v) });
+      if (typeof v === 'string' && DAY_WORDS.includes(normalize(v)))
+        cols.push({ ci, jour: normalize(v) });
     });
-    if (cols.length >= 3) { headerIdx = i; dayCols = cols; break; }
+    if (cols.length >= 3) {
+      headerIdx = i;
+      dayCols = cols;
+      break;
+    }
   }
-  if (headerIdx < 0) throw new Error('Impossible de trouver la ligne des jours dans « Commandes ».');
+  if (headerIdx < 0)
+    throw new Error('Impossible de trouver la ligne des jours dans « Commandes ».');
   dayCols.sort((a, b) => DAY_WORDS.indexOf(a.jour) - DAY_WORDS.indexOf(b.jour));
   const jours = dayCols.map((d) => d.jour.charAt(0).toUpperCase() + d.jour.slice(1));
 
@@ -132,7 +139,7 @@ export function extractModel(wb: XLSX.WorkBook): ImportModel {
         pate: currentPate,
         qte: nums.map((v) => (typeof v === 'number' ? v : 0)),
         poidsPate: null,
-        garniture: 0
+        garniture: 0,
       });
     }
   }
@@ -147,7 +154,7 @@ export function extractModel(wb: XLSX.WorkBook): ImportModel {
       poidsList.push({
         nom: row[0].trim(),
         pate: typeof row[2] === 'number' ? row[2] : row[1], // "gr ss ing" sinon "gr à l'unité"
-        garniture: typeof row[3] === 'number' ? row[3] : 0
+        garniture: typeof row[3] === 'number' ? row[3] : 0,
       });
     }
   }
@@ -158,17 +165,24 @@ export function extractModel(wb: XLSX.WorkBook): ImportModel {
   const recettes: ModelRecette[] = [];
   for (const pate of sections) {
     const sheet = fuzzyFind(pate, sheetNames, (s) => s);
-    if (!sheet) { report.warn.push(`Recette « ${pate} » : aucune feuille correspondante`); continue; }
+    if (!sheet) {
+      report.warn.push(`Recette « ${pate} » : aucune feuille correspondante`);
+      continue;
+    }
     const rows = sheetToRows(wb.Sheets[sheet]);
     const lignes: ModelRecette['lignes'] = [];
     let base: number | null = null;
     for (const row of rows) {
-      const label = row[0], val = row[1];
+      const label = row[0],
+        val = row[1];
       if (typeof label !== 'string' || typeof val !== 'number') {
         if (lignes.length > 0 && base !== null) break;
         continue;
       }
-      if (normalize(label) === 'total') { base = val; break; }
+      if (normalize(label) === 'total') {
+        base = val;
+        break;
+      }
       lignes.push({ ingredient: label.trim(), quantite: val, arrondi: arrondiFor(label) });
     }
     if (lignes.length === 0) {
@@ -179,7 +193,7 @@ export function extractModel(wb: XLSX.WorkBook): ImportModel {
       pate,
       feuille: sheet.trim(),
       base: base ?? lignes.reduce((a, l) => a + l.quantite, 0),
-      lignes
+      lignes,
     });
   }
   report.ok.push(`${recettes.length} recettes extraites`);
@@ -188,10 +202,16 @@ export function extractModel(wb: XLSX.WorkBook): ImportModel {
   let unmatched = 0;
   for (const p of produits) {
     const w = fuzzyFind(p.nom, poidsList, (x) => x.nom);
-    if (w) { p.poidsPate = w.pate; p.garniture = w.garniture; }
-    else { unmatched++; report.warn.push(`Poids introuvable pour « ${p.nom} »`); }
+    if (w) {
+      p.poidsPate = w.pate;
+      p.garniture = w.garniture;
+    } else {
+      unmatched++;
+      report.warn.push(`Poids introuvable pour « ${p.nom} »`);
+    }
   }
-  if (unmatched === 0 && poidsList.length) report.ok.push('Tous les produits rapprochés de leur poids');
+  if (unmatched === 0 && poidsList.length)
+    report.ok.push('Tous les produits rapprochés de leur poids');
 
   return { jours, produits, recettes, report };
 }
@@ -231,7 +251,8 @@ export function validateImport(wb: XLSX.WorkBook, tolerance = 0.01): ValidationR
   const { results } = computeAll(cells, analysis.formulas);
 
   const mismatches: ValidationResult['mismatches'] = [];
-  let matches = 0, evaluated = 0;
+  let matches = 0,
+    evaluated = 0;
   for (const [key, val] of Object.entries(results)) {
     const excel = cells[key]?.v;
     if (typeof excel !== 'number') continue; // on ne valide que le numérique
@@ -245,6 +266,6 @@ export function validateImport(wb: XLSX.WorkBook, tolerance = 0.01): ValidationR
     evaluated,
     matches,
     mismatches: mismatches.slice(0, 50), // on plafonne le rapport
-    parseErrors: Object.keys(analysis.errors).length
+    parseErrors: Object.keys(analysis.errors).length,
   };
 }

@@ -9,14 +9,14 @@
 
 <h1>Commandes</h1>
 <div class="jours">
-  {#each JOURS as j, i}
+  {#each JOURS as j, i (j)}
     <button class:active={i === jour} onclick={() => (jour = i)}>{j}</button>
   {/each}
 </div>
 
-{#each data.pates as pate}
+{#each data.pates as pate (pate.id)}
   <div class="section">Pâte {pate.nom}</div>
-  {#each pate.produits as p}
+  {#each pate.produits as p (p.id)}
     <form method="POST" action="?/quantite" use:enhance class="produit">
       <input type="hidden" name="produitId" value={p.id} />
       <input type="hidden" name="jour" value={jour} />

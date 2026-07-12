@@ -3,7 +3,7 @@
  * (Le moteur de formules ne sert qu'à valider l'import.)
  */
 
-import { ceilTo } from '../engine/engine';
+import { ceilTo } from '../engine/engine.js';
 
 export interface ProduitJour {
   id: number;
@@ -49,10 +49,18 @@ export function fichesDuJour(
       pate,
       totalPate,
       coef,
-      detail: ps.map((p) => ({ nom: p.nom, quantite: p.quantite, totalPate: p.quantite * p.poidsPate })),
-      pesee: rec && coef !== null
-        ? rec.lignes.map((l) => ({ ingredient: l.ingredient, grammes: ceilTo(l.quantite * coef, l.arrondi) }))
-        : []
+      detail: ps.map((p) => ({
+        nom: p.nom,
+        quantite: p.quantite,
+        totalPate: p.quantite * p.poidsPate,
+      })),
+      pesee:
+        rec && coef !== null
+          ? rec.lignes.map((l) => ({
+              ingredient: l.ingredient,
+              grammes: ceilTo(l.quantite * coef, l.arrondi),
+            }))
+          : [],
     });
   }
   return fiches;

@@ -20,7 +20,7 @@ export type CellValue = number | string | boolean | null | undefined;
 
 export interface Cell {
   v?: CellValue; // valeur (ou valeur en cache pour une formule)
-  f?: string;    // texte de la formule, sans le "=" initial
+  f?: string; // texte de la formule, sans le "=" initial
 }
 
 /** Cellules du classeur, indexées par "NomFeuille!A1". */
@@ -66,7 +66,10 @@ export function numToCol(n: number): string {
 }
 
 export function parseAddr(addr: string): { col: number; row: number } {
-  const m = addr.replace(/\$/g, '').toUpperCase().match(/^([A-Z]+)(\d+)$/);
+  const m = addr
+    .replace(/\$/g, '')
+    .toUpperCase()
+    .match(/^([A-Z]+)(\d+)$/);
   if (!m) throw new Error(`Adresse invalide : ${addr}`);
   return { col: colToNum(m[1]), row: parseInt(m[2], 10) };
 }
@@ -101,7 +104,10 @@ export function tokenize(
 
   while (i < src.length) {
     const ch = src[i];
-    if (/\s/.test(ch)) { i++; continue; }
+    if (/\s/.test(ch)) {
+      i++;
+      continue;
+    }
 
     // 'Nom de feuille'!B4
     if (ch === "'") {
@@ -138,7 +144,8 @@ export function tokenize(
         continue;
       }
       const clean = word.replace(/\$/g, '').toUpperCase();
-      if (/^[A-Z]{1,3}\d+$/.test(clean)) tokens.push({ t: 'ref', sheet: defaultSheet, addr: clean });
+      if (/^[A-Z]{1,3}\d+$/.test(clean))
+        tokens.push({ t: 'ref', sheet: defaultSheet, addr: clean });
       else tokens.push({ t: 'func', v: clean });
       continue;
     }
@@ -155,8 +162,16 @@ export function tokenize(
       i += 2;
       continue;
     }
-    if (ch === '>' && src[i + 1] === '=') { tokens.push({ t: 'op', v: '>=' }); i += 2; continue; }
-    if ('+-*/^%(),:=<>&'.includes(ch)) { tokens.push({ t: 'op', v: ch }); i++; continue; }
+    if (ch === '>' && src[i + 1] === '=') {
+      tokens.push({ t: 'op', v: '>=' });
+      i += 2;
+      continue;
+    }
+    if ('+-*/^%(),:=<>&'.includes(ch)) {
+      tokens.push({ t: 'op', v: ch });
+      i++;
+      continue;
+    }
     throw new Error(`Caractère inconnu : ${ch}`);
   }
   return tokens;
@@ -169,17 +184,24 @@ export function parseFormula(tokens: Token[]): Ast {
   const peek = () => tokens[pos];
   const next = () => tokens[pos++];
 
+  /** Garde de type : jeton courant est-il un opérateur (éventuellement d'une valeur précise) ? */
+  const isOp = (tok: Token | undefined, v?: string): tok is Extract<Token, { t: 'op' }> =>
+    tok?.t === 'op' && (v === undefined || tok.v === v);
+
   function comparison(): Ast {
     let left = concat();
-    while (peek()?.t === 'op' && ['=', '<', '>', '<=', '>=', '<>'].includes((peek() as any).v)) {
-      const op = (next() as any).v;
+    let tok = peek();
+    while (isOp(tok) && ['=', '<', '>', '<=', '>=', '<>'].includes(tok.v)) {
+      next();
+      const op = tok.v as '=' | '<>' | '<' | '>' | '<=' | '>=';
       left = { type: 'cmp', op, left, right: concat() };
+      tok = peek();
     }
     return left;
   }
   function concat(): Ast {
     let left = additive();
-    while (peek()?.t === 'op' && (peek() as any).v === '&') {
+    while (isOp(peek(), '&')) {
       next();
       left = { type: 'concat', left, right: additive() };
     }
@@ -187,44 +209,60 @@ export function parseFormula(tokens: Token[]): Ast {
   }
   function additive(): Ast {
     let left = multiplicative();
-    while (peek()?.t === 'op' && ['+', '-'].includes((peek() as any).v)) {
-      const op = (next() as any).v;
+    let tok = peek();
+    while (isOp(tok) && ['+', '-'].includes(tok.v)) {
+      next();
+      const op = tok.v as '+' | '-';
       left = { type: 'bin', op, left, right: multiplicative() };
+      tok = peek();
     }
     return left;
   }
   function multiplicative(): Ast {
     let left = power();
-    while (peek()?.t === 'op' && ['*', '/'].includes((peek() as any).v)) {
-      const op = (next() as any).v;
+    let tok = peek();
+    while (isOp(tok) && ['*', '/'].includes(tok.v)) {
+      next();
+      const op = tok.v as '*' | '/';
       left = { type: 'bin', op, left, right: power() };
+      tok = peek();
     }
     return left;
   }
   function power(): Ast {
     const left = unary();
-    if (peek()?.t === 'op' && (peek() as any).v === '^') {
+    if (isOp(peek(), '^')) {
       next();
       return { type: 'bin', op: '^', left, right: power() };
     }
     return left;
   }
   function unary(): Ast {
-    if (peek()?.t === 'op' && (peek() as any).v === '-') { next(); return { type: 'neg', arg: unary() }; }
-    if (peek()?.t === 'op' && (peek() as any).v === '+') { next(); return unary(); }
+    if (isOp(peek(), '-')) {
+      next();
+      return { type: 'neg', arg: unary() };
+    }
+    if (isOp(peek(), '+')) {
+      next();
+      return unary();
+    }
     return postfix();
   }
   function postfix(): Ast {
     let node = primary();
-    while (peek()?.t === 'op' && (peek() as any).v === '%') { next(); node = { type: 'pct', arg: node }; }
+    while (isOp(peek(), '%')) {
+      next();
+      node = { type: 'pct', arg: node };
+    }
     return node;
   }
   function refNode(tok: Extract<Token, { t: 'ref' }>): Ast {
-    if (peek()?.t === 'op' && (peek() as any).v === ':') {
+    if (isOp(peek(), ':')) {
       next();
       const end = next();
       if (!end || end.t !== 'ref') throw new Error('Fin de plage attendue');
-      const a = parseAddr(tok.addr), b = parseAddr(end.addr);
+      const a = parseAddr(tok.addr),
+        b = parseAddr(end.addr);
       const grid: string[][] = [];
       for (let r = Math.min(a.row, b.row); r <= Math.max(a.row, b.row); r++) {
         const line: string[] = [];
@@ -244,12 +282,15 @@ export function parseFormula(tokens: Token[]): Ast {
     if (tok.t === 'str') return { type: 'str', v: tok.v };
     if (tok.t === 'ref') return refNode(tok);
     if (tok.t === 'func') {
-      if (peek()?.t === 'op' && (peek() as any).v === '(') {
+      if (isOp(peek(), '(')) {
         next();
         const args: Ast[] = [];
-        if (!(peek() && (peek() as any).v === ')')) {
+        if (!isOp(peek(), ')')) {
           args.push(comparison());
-          while (peek() && (peek() as any).v === ',') { next(); args.push(comparison()); }
+          while (isOp(peek(), ',')) {
+            next();
+            args.push(comparison());
+          }
         }
         next(); // )
         return { type: 'call', name: tok.v, args };
@@ -261,7 +302,7 @@ export function parseFormula(tokens: Token[]): Ast {
       next(); // )
       return inner;
     }
-    throw new Error(`Jeton inattendu : ${'v' in tok ? tok.v : tok.t}`);
+    throw new Error(`Jeton inattendu : ${JSON.stringify(tok)}`);
   }
 
   return comparison();
@@ -302,41 +343,64 @@ function flattenArg(node: Ast, getVal: GetVal): CellValue[] {
 
 export function evalNode(node: Ast, getVal: GetVal): CellValue {
   switch (node.type) {
-    case 'num': return node.v;
-    case 'str': return node.v;
-    case 'ref': return getVal(node.key);
-    case 'range': throw new Error('Plage hors fonction');
-    case 'neg': return -toNum(evalNode(node.arg, getVal));
-    case 'pct': return toNum(evalNode(node.arg, getVal)) / 100;
+    case 'num':
+      return node.v;
+    case 'str':
+      return node.v;
+    case 'ref':
+      return getVal(node.key);
+    case 'range':
+      throw new Error('Plage hors fonction');
+    case 'neg':
+      return -toNum(evalNode(node.arg, getVal));
+    case 'pct':
+      return toNum(evalNode(node.arg, getVal)) / 100;
     case 'concat':
       return String(evalNode(node.left, getVal) ?? '') + String(evalNode(node.right, getVal) ?? '');
     case 'bin': {
       const l = toNum(evalNode(node.left, getVal));
       const r = toNum(evalNode(node.right, getVal));
       switch (node.op) {
-        case '+': return l + r;
-        case '-': return l - r;
-        case '*': return l * r;
-        case '/': return r === 0 ? NaN : l / r;
-        case '^': return Math.pow(l, r);
+        case '+':
+          return l + r;
+        case '-':
+          return l - r;
+        case '*':
+          return l * r;
+        case '/':
+          return r === 0 ? NaN : l / r;
+        case '^':
+          return Math.pow(l, r);
       }
       break;
     }
     case 'cmp': {
       let l = evalNode(node.left, getVal);
       let r = evalNode(node.right, getVal);
-      if (typeof l === 'string' || typeof r === 'string') { l = normText(l); r = normText(r); }
+      if (typeof l === 'string' || typeof r === 'string') {
+        l = normText(l);
+        r = normText(r);
+      }
+      const lc = l as number | string;
+      const rc = r as number | string;
       switch (node.op) {
-        case '=': return l === r;
-        case '<>': return l !== r;
-        case '<': return (l as any) < (r as any);
-        case '>': return (l as any) > (r as any);
-        case '<=': return (l as any) <= (r as any);
-        case '>=': return (l as any) >= (r as any);
+        case '=':
+          return l === r;
+        case '<>':
+          return l !== r;
+        case '<':
+          return lc < rc;
+        case '>':
+          return lc > rc;
+        case '<=':
+          return lc <= rc;
+        case '>=':
+          return lc >= rc;
       }
       break;
     }
-    case 'call': return evalCall(node, getVal);
+    case 'call':
+      return evalCall(node, getVal);
   }
   throw new Error('Nœud inconnu');
 }
@@ -349,37 +413,54 @@ function evalCall(node: Extract<Ast, { type: 'call' }>, getVal: GetVal): CellVal
       .filter((v): v is number => typeof v === 'number' && !isNaN(v));
 
   switch (name) {
-    case 'SUM': case 'SOMME':
+    case 'SUM':
+    case 'SOMME':
       return nums().reduce((a, b) => a + b, 0);
-    case 'AVERAGE': case 'MOYENNE': {
+    case 'AVERAGE':
+    case 'MOYENNE': {
       const n = nums();
       return n.length ? n.reduce((a, b) => a + b, 0) / n.length : 0;
     }
-    case 'MIN': return Math.min(...nums());
-    case 'MAX': return Math.max(...nums());
-    case 'ABS': return Math.abs(toNum(evalNode(args[0], getVal)));
-    case 'COUNT': case 'NB': return nums().length;
-    case 'ROUND': case 'ARRONDI': {
+    case 'MIN':
+      return Math.min(...nums());
+    case 'MAX':
+      return Math.max(...nums());
+    case 'ABS':
+      return Math.abs(toNum(evalNode(args[0], getVal)));
+    case 'COUNT':
+    case 'NB':
+      return nums().length;
+    case 'ROUND':
+    case 'ARRONDI': {
       const v = toNum(evalNode(args[0], getVal));
       const d = args[1] ? toNum(evalNode(args[1], getVal)) : 0;
       const f = Math.pow(10, d);
       return Math.round(v * f) / f;
     }
-    case 'CEILING': case 'CEILING.MATH': case 'PLAFOND': case 'PLAFOND.MATH': {
+    case 'CEILING':
+    case 'CEILING.MATH':
+    case 'PLAFOND':
+    case 'PLAFOND.MATH': {
       const v = toNum(evalNode(args[0], getVal));
       const sig = args[1] ? toNum(evalNode(args[1], getVal)) : 1;
       return ceilTo(v, sig);
     }
-    case 'FLOOR': case 'FLOOR.MATH': case 'PLANCHER': {
+    case 'FLOOR':
+    case 'FLOOR.MATH':
+    case 'PLANCHER': {
       const v = toNum(evalNode(args[0], getVal));
       const sig = args[1] ? toNum(evalNode(args[1], getVal)) : 1;
       return sig ? Math.floor(v / sig + 1e-9) * sig : 0;
     }
-    case 'IF': case 'SI':
+    case 'IF':
+    case 'SI':
       return evalNode(args[0], getVal)
         ? evalNode(args[1], getVal)
-        : args[2] ? evalNode(args[2], getVal) : false;
-    case 'IFERROR': case 'SIERREUR': {
+        : args[2]
+          ? evalNode(args[2], getVal)
+          : false;
+    case 'IFERROR':
+    case 'SIERREUR': {
       try {
         const v = evalNode(args[0], getVal);
         return typeof v === 'number' && isNaN(v) ? evalNode(args[1], getVal) : v;
@@ -387,7 +468,8 @@ function evalCall(node: Extract<Ast, { type: 'call' }>, getVal: GetVal): CellVal
         return evalNode(args[1], getVal);
       }
     }
-    case 'MATCH': case 'EQUIV': {
+    case 'MATCH':
+    case 'EQUIV': {
       const target = evalNode(args[0], getVal);
       if (args[1].type !== 'range') throw new Error('MATCH attend une plage');
       const grid = args[1].grid;
@@ -411,7 +493,8 @@ function evalCall(node: Extract<Ast, { type: 'call' }>, getVal: GetVal): CellVal
       if (!grid[r] || grid[r][c] === undefined) return NaN;
       return getVal(grid[r][c]);
     }
-    case 'VLOOKUP': case 'RECHERCHEV': {
+    case 'VLOOKUP':
+    case 'RECHERCHEV': {
       const target = evalNode(args[0], getVal);
       if (args[1].type !== 'range') throw new Error('VLOOKUP attend une plage');
       const grid = args[1].grid;
@@ -466,11 +549,18 @@ export function computeAll(
 
   const getVal: GetVal = (key) => {
     if (key in memo) return memo[key];
-    if (visiting.has(key)) { memo[key] = NaN; return NaN; }
+    if (visiting.has(key)) {
+      memo[key] = NaN;
+      return NaN;
+    }
     visiting.add(key);
     let val: CellValue;
     if (formulas[key]) {
-      try { val = evalNode(formulas[key].ast, getVal); } catch { val = NaN; }
+      try {
+        val = evalNode(formulas[key].ast, getVal);
+      } catch {
+        val = NaN;
+      }
     } else if (key in overrides) {
       val = overrides[key];
     } else {

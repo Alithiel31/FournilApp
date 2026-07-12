@@ -10,13 +10,13 @@
 <header>
   <h1>Production</h1>
   <div class="jours">
-    {#each data.jours as j}
+    {#each data.jours as j (j)}
       <a href="/production/{j}" class:active={j === data.jour}>{j.slice(0, 3)}</a>
     {/each}
   </div>
 </header>
 
-{#each data.fiches as fiche}
+{#each data.fiches as fiche (fiche.pate)}
   <section class="carte">
     <div class="entete">
       <span class="pate">Pâte {fiche.pate}</span>
@@ -25,7 +25,7 @@
       </span>
     </div>
     <div class="detail">
-      {#each fiche.detail as d}
+      {#each fiche.detail as d (d.nom)}
         <div class="ligne-detail">
           <span>{d.quantite} × {d.nom}</span>
           <span class="num">{fmt(d.totalPate)} g</span>
@@ -35,7 +35,7 @@
     {#if fiche.pesee.length}
       <div class="pesee">
         <div class="titre-pesee">Pesée du jour</div>
-        {#each fiche.pesee as l}
+        {#each fiche.pesee as l (l.ingredient)}
           {@const k = `${data.jour}-${fiche.pate}-${l.ingredient}`}
           <button class="item" class:fait={peses[k]} onclick={() => toggle(k)}>
             <span class="case">{peses[k] ? '✓' : ''}</span>

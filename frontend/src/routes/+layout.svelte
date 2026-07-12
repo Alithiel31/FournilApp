@@ -6,7 +6,8 @@
     { href: '/commandes', icon: '✎', label: 'Commandes' },
     { href: '/production/lundi', match: '/production', icon: '🔥', label: 'Production' },
     { href: '/recettes', icon: '📖', label: 'Recettes' },
-    { href: '/poids', icon: '⚖', label: 'Poids' }
+    { href: '/poids', icon: '⚖', label: 'Poids' },
+    { href: '/import', icon: '⬆', label: 'Import' }
   ];
   const isActive = (t: (typeof tabs)[number]) =>
     page.url.pathname.startsWith(t.match ?? t.href);
@@ -15,7 +16,7 @@
 <div class="app">
   <main>{@render children()}</main>
   <nav>
-    {#each tabs as t}
+    {#each tabs as t (t.href)}
       <a href={t.href} class:active={isActive(t)}>
         <span class="icon">{t.icon}</span>
         {t.label}
@@ -51,7 +52,7 @@
     width: 100%;
     max-width: 560px;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     background: #fff;
     border-top: 1px solid #e5dfd2;
     padding-bottom: env(safe-area-inset-bottom);

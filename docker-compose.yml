@@ -1,9 +1,15 @@
 # Orchestration complète : base de données, API, frontend PWA.
 #   docker compose up --build
-# Frontend : http://localhost:3000 · API : http://localhost:3001
-# En prod sur Caesura/Coolify : déployer backend/ et frontend/ comme deux
-# applications distinctes (chacune a son Dockerfile) et pointer DATABASE_URL
-# vers le PostgreSQL natif (port 5433) au lieu du service db.
+# Accès public prévu : https://fournilapp.alithiel31.dev (Cloudflare Tunnel → frontend)
+# Accès direct sur le Pi (debug) : http://caesura:3002 · API : http://caesura:3003
+# (ports décalés : 3000/3001/5433 déjà pris par d'autres projets sur ce Pi —
+#  voir `docker ps`)
+#
+# Convention alignée sur QcWeather : Dockerfiles en stages nommés
+# deps/development/build/production, target: production explicite,
+# secrets du backend dans backend/.env (hors du compose, hors git).
+# Différence assumée : le frontend reste servi par Node (adapter-node,
+# SSR + form actions), pas par nginx statique comme QcWeather.
 
 services:
   db:
@@ -21,24 +27,33 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
-    environment:
-      DATABASE_URL: postgresql://fournil:motdepasse@db:5432/fournil
-      PORT: 3001
-      CORS_ORIGIN: http://localhost:3000,http://localhost:5173
+    build:
+      context: ./backend
+      target: production
+    env_file:
+      - ./backend/.env
     ports:
-      - "3001:3001"
+      - "3003:3001"
     depends_on:
       db:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      target: production
     environment:
       API_URL: http://backend:3001
       PORT: 3000
+      # ORIGIN sert à la protection CSRF de SvelteKit : doit correspondre à
+      # l'URL publique réelle. Une fois le Cloudflare Tunnel branché sur ce
+      # domaine, c'est la seule origine acceptée pour les formulaires
+      # (commandes, import) — l'accès direct http://caesura:3002 continuera
+      # d'afficher les pages mais les soumissions de formulaire seront
+      # rejetées (403) tant qu'on n'y accède pas via ce domaine.
+      ORIGIN: https://fournilapp.alithiel31.dev
     ports:
-      - "3000:3000"
+      - "3002:3000"
     depends_on:
       - backend
 

@@ -1,0 +1,7 @@
+node_modules/
+dist/
+build/
+.git/
+.svelte-kit/
+backend/dist/
+frontend/build/

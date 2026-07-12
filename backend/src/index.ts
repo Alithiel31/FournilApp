@@ -16,10 +16,10 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import cors from 'cors';
 import multer from 'multer';
 import * as XLSX from 'xlsx';
-import { prisma } from './db';
-import { extractModel, validateImport } from './import/extract';
-import { applyImport } from './services/importer';
-import { fichesDuJour } from './domain/production';
+import { prisma } from './db.js';
+import { extractModel, validateImport } from './import/extract.js';
+import { applyImport } from './services/importer.js';
+import { fichesDuJour } from './domain/production.js';
 
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
@@ -31,7 +31,7 @@ app.use(express.json());
 // multer en mémoire : le xlsx est lu directement depuis le buffer, jamais écrit sur disque
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 /** Enveloppe les handlers async pour propager les erreurs au middleware d'erreur
@@ -68,7 +68,7 @@ app.post(
     if (ratio < 0.95) {
       res.status(422).json({
         error: `Validation échouée : ${validation.matches}/${validation.evaluated} formules reproduites. Classeur inattendu ?`,
-        validation
+        validation,
       });
       return;
     }
@@ -94,8 +94,8 @@ app.get(
       await prisma.pate.findMany({
         orderBy: { ordre: 'asc' },
         include: {
-          produits: { orderBy: { ordre: 'asc' }, include: { commandes: true } }
-        }
+          produits: { orderBy: { ordre: 'asc' }, include: { commandes: true } },
+        },
       })
     );
   })
@@ -111,8 +111,11 @@ app.put(
     };
     if (
       !Number.isInteger(produitId) ||
-      !Number.isInteger(jour) || (jour as number) < 0 || (jour as number) > 6 ||
-      typeof quantite !== 'number' || quantite < 0
+      !Number.isInteger(jour) ||
+      (jour as number) < 0 ||
+      (jour as number) > 6 ||
+      typeof quantite !== 'number' ||
+      quantite < 0
     ) {
       res.status(400).json({ error: 'produitId, jour (0-6) et quantite (≥0) requis' });
       return;
@@ -121,7 +124,7 @@ app.put(
       await prisma.commande.upsert({
         where: { produitId_jour: { produitId: produitId as number, jour: jour as number } },
         update: { quantite },
-        create: { produitId: produitId as number, jour: jour as number, quantite }
+        create: { produitId: produitId as number, jour: jour as number, quantite },
       })
     );
   })
@@ -139,10 +142,10 @@ app.get(
     }
 
     const produits = await prisma.produit.findMany({
-      include: { pate: true, commandes: { where: { jour } } }
+      include: { pate: true, commandes: { where: { jour } } },
     });
     const recettes = await prisma.recette.findMany({
-      include: { pate: true, lignes: { orderBy: { ordre: 'asc' } } }
+      include: { pate: true, lignes: { orderBy: { ordre: 'asc' } } },
     });
 
     const fiches = fichesDuJour(
@@ -151,7 +154,7 @@ app.get(
         nom: p.nom,
         pate: p.pate.nom,
         quantite: p.commandes[0]?.quantite ?? 0,
-        poidsPate: p.poidsPate ?? 0
+        poidsPate: p.poidsPate ?? 0,
       })),
       new Map(recettes.map((r) => [r.pate.nom, { base: r.base, lignes: r.lignes }]))
     );
@@ -168,7 +171,7 @@ app.get(
     res.json(
       await prisma.recette.findMany({
         include: { pate: true, lignes: { orderBy: { ordre: 'asc' } } },
-        orderBy: { pate: { ordre: 'asc' } }
+        orderBy: { pate: { ordre: 'asc' } },
       })
     );
   })
