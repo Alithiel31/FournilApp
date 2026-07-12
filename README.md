@@ -19,15 +19,18 @@ fournil/
 │       │   ├── engine.ts       #   tokenizer + parseur + évaluateur
 │       │   └── engine.test.ts  #   Vitest — 5 tests verts
 │       ├── import/extract.ts   # extractModel + fuzzyFind + validateImport
+│       ├── ai/classify-workbook.ts # classification IA (Anthropic), à la demande
 │       ├── services/importer.ts# transaction de remplacement du référentiel
 │       └── domain/production.ts# fiches du jour : regroupement, coef, pesées
 └── frontend/                   # SvelteKit (Svelte 5) PWA  (port 3000)
     ├── Dockerfile
     ├── vite.config.ts          # @vite-pwa/sveltekit : manifest + offline
     └── src/
-        ├── lib/api.ts          # client API (API_URL, réseau Docker)
+        ├── hooks.server.ts      # garde toutes les routes (session → sinon /login)
+        ├── lib/api.ts           # client API (API_URL, réseau Docker, token Bearer)
         └── routes/
-            ├── +layout.svelte          # navigation basse 4 onglets
+            ├── +layout.svelte          # navigation basse 4 onglets + déconnexion
+            ├── login/  ·  logout/      # auth (cookie httpOnly "session")
             ├── commandes/              # SEULE zone d'écriture (PUT /api/commandes)
             ├── production/[jour]/      # fiches + checklist de pesée
             ├── recettes/  ·  poids/    # référentiels lecture seule
@@ -53,11 +56,24 @@ le classeur de référence : **788/788 formules numériques reproduites (100 %),
 
 ## API
 
+Toutes les routes `/api/*` sauf `/api/auth/login` exigent
+`Authorization: Bearer <token>` (401 sinon). Le token s'obtient via
+`/api/auth/login` et vit côté frontend dans un cookie httpOnly (voir
+`frontend/src/hooks.server.ts`). Créer un compte :
+- en dev : `cd backend && npm run create-user -- "email@example.com" "motdepasse" "Nom"`
+- via docker (image production, `tsx` absent) :
+  `docker compose exec backend npm run create-user:prod -- "email@example.com" "motdepasse" "Nom"`
+
 | Méthode | Route                  | Rôle                                            |
 |--------:|------------------------|-------------------------------------------------|
 | GET     | `/health`              | sonde de vie (Coolify)                          |
-| POST    | `/api/import`          | injection xlsx (multipart, champ `file`)        |
-| GET     | `/api/imports`         | historique des injections + rapports            |
+| POST    | `/api/auth/login`      | `{ email, password }` → `{ token, expiresAt }` (public) |
+| POST    | `/api/auth/logout`     | invalide le token courant                       |
+| GET     | `/api/auth/me`         | utilisateur courant                             |
+| POST    | `/api/import`          | injection xlsx (multipart, champ `file`, + `commandesSheet`/`poidsSheet` optionnels) |
+| POST    | `/api/import/analyze`  | classification IA des feuilles (multipart, champ `file`) — à la demande |
+| GET     | `/api/imports`         | historique des injections + rapports (avec auteur)|
+| POST    | `/api/admin/reset-data`| `{ confirm: "SUPPRIMER" }` → vide Pate/Recette/RecetteLigne/Produit/Commande |
 | GET     | `/api/commandes`       | pâtes → produits → quantités par jour           |
 | PUT     | `/api/commandes`       | `{ produitId, jour, quantite }`                 |
 | GET     | `/api/production/:jour`| fiches du jour (pâtes, coef, pesées arrondies)  |
@@ -80,6 +96,27 @@ le classeur de référence : **788/788 formules numériques reproduites (100 %),
 Constat sur le classeur réel : une section « Divers » (Burger, Hot-dog, Carré au
 lait…) sans feuille recette ni poids — le rapport d'import remonte ces cas en ⚠.
 
+### Classification IA (optionnelle)
+
+Si la détection par nom échoue (feuille « Commandes » ou « Poids » introuvable),
+`/import` propose un bouton « Essayer l'analyse IA » — jamais déclenché
+automatiquement. Il envoie à Claude (Haiku) un échantillon de chaque feuille
+(nom + ~12 lignes/10 colonnes, voir `ai/classify-workbook.ts`) et reçoit une
+proposition de rôle par feuille (commandes / poids / recette / autre) via un
+appel outil structuré. L'utilisateur choisit/corrige les feuilles proposées,
+puis l'import repart sur le pipeline déterministe habituel (`extractModel`
+avec overrides, puis `validateImport`) — l'IA ne fait que deviner la
+structure, jamais les chiffres. Sans `ANTHROPIC_API_KEY`, l'import normal
+n'est pas affecté ; le bouton renvoie juste une erreur explicite.
+
+### Zone de danger (purge du référentiel)
+
+Sur `/import`, un bouton replié « Zone de danger » vide Pate/Recette/RecetteLigne/
+Produit/Commande — jamais les comptes ni l'historique des imports. Double
+confirmation : il faut taper exactement `SUPPRIMER` côté front pour activer le
+bouton, et l'API revérifie ce même mot dans le corps de la requête
+(`POST /api/admin/reset-data`) avant toute suppression.
+
 ## Arrondis de pesée
 
 Heuristique par ingrédient (`arrondiFor`) : sel → 20 g, levure → 5 g, reste → 50 g.
@@ -98,12 +135,14 @@ réimport. Piste v2 : lire les pas exacts des `CEILING(...)` du classeur à l'im
 
 ```bash
 # tout-en-un
+cp .env.example .env  # POSTGRES_PASSWORD (racine)
 docker compose up --build
 # frontend → http://localhost:3000 · API → http://localhost:3001
 
 # ou en dev, terminal 1 (API) :
 cd backend && cp .env.example .env && npm install
 npx prisma migrate dev --name init && npm run dev
+npm run create-user -- "moi@example.com" "motdepasse-long" "Mon Nom"
 
 # terminal 2 (front) :
 cd frontend && npm install && API_URL=http://localhost:3001 npm run dev
@@ -124,9 +163,9 @@ cd backend && npm test
 
 ## Feuille de route
 
-- [ ] Auth (sessions cookie côté API, argon2), rôles boulanger/admin
+- [x] Auth (sessions token côté API, argon2) — pas encore de rôles boulanger/admin (un seul niveau d'accès)
 - [ ] Page d'import côté front avec affichage du rapport et de la validation
 - [ ] Lecture des pas d'arrondi exacts depuis les `CEILING` du classeur
 - [ ] Export xlsx (trajet inverse : base → classeur)
 - [ ] Historique des commandes par semaine (champ `semaine` sur `Commande`)
-- [ ] Couche IA (optionnelle) : classification automatique des feuilles d'un classeur inconnu
+- [x] Couche IA (optionnelle) : classification automatique des feuilles d'un classeur inconnu, déclenchée à la demande

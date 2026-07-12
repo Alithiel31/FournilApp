@@ -21,10 +21,12 @@ interface FichePate {
   pesee: FichePesee[];
 }
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, cookies }) => {
   try {
     return await api<{ jour: string; jours: string[]; fiches: FichePate[] }>(
-      `/api/production/${params.jour.toLowerCase()}`
+      `/api/production/${params.jour.toLowerCase()}`,
+      undefined,
+      cookies.get('session')
     );
   } catch (e) {
     throw error(404, e instanceof Error ? e.message : 'Jour inconnu');

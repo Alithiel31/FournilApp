@@ -10,13 +10,17 @@
 # secrets du backend dans backend/.env (hors du compose, hors git).
 # Différence assumée : le frontend reste servi par Node (adapter-node,
 # SSR + form actions), pas par nginx statique comme QcWeather.
+#
+# POSTGRES_PASSWORD vient du .env à la racine (copier .env.example → .env,
+# hors git comme backend/.env). Doit matcher le mot de passe dans
+# backend/.env (DATABASE_URL).
 
 services:
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: fournil
-      POSTGRES_PASSWORD: motdepasse
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?définis POSTGRES_PASSWORD dans un .env à la racine}
       POSTGRES_DB: fournil
     volumes:
       - pgdata:/var/lib/postgresql/data

@@ -59,10 +59,12 @@ model Commande {
 }
 
 model Import {
-  id         Int      @id @default(autoincrement())
-  fileName   String
-  importedAt DateTime @default(now())
-  rapport    Json // { ok: string[], warn: string[], validation: {...} }
+  id           Int      @id @default(autoincrement())
+  fileName     String
+  importedAt   DateTime @default(now())
+  rapport      Json // { ok: string[], warn: string[], validation: {...} }
+  importedById Int?
+  importedBy   User?    @relation(fields: [importedById], references: [id], onDelete: SetNull)
 }
 
 // --- Auth session (même approche que Fournée) ---
@@ -73,6 +75,7 @@ model User {
   password String // hash argon2/bcrypt
   nom      String
   sessions Session[]
+  imports  Import[]
 }
 
 model Session {

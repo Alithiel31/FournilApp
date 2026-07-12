@@ -3,13 +3,24 @@
  *
  * Routes :
  *   GET  /health                    — sonde de vie (Coolify)
- *   POST /api/import                — injection d'un classeur xlsx (multipart, champ "file")
- *   GET  /api/imports               — historique des injections (rapports)
- *   GET  /api/commandes             — pâtes → produits → quantités par jour
- *   PUT  /api/commandes             — { produitId, jour, quantite }
- *   GET  /api/production/:jour      — fiches du jour (regroupées par pâte, pesées arrondies)
- *   GET  /api/recettes              — recettes en lecture seule
- *   GET  /api/poids                 — poids unitaires + produits non rapprochés
+ *   POST /api/auth/login            — { email, password } → { token, expiresAt, user }
+ *   POST /api/auth/logout           — invalide le token (Authorization: Bearer ...)
+ *   GET  /api/auth/me               — utilisateur courant (protégé)
+ *   POST /api/import                — injection d'un classeur xlsx (multipart, champ "file",
+ *                                      champs optionnels "commandesSheet"/"poidsSheet") — protégé
+ *   POST /api/import/analyze        — classification IA des feuilles d'un classeur non
+ *                                      reconnu (multipart, champ "file") — protégé, à la demande
+ *   GET  /api/imports               — historique des injections (rapports) — protégé
+ *   POST /api/admin/reset-data      — { confirm: "SUPPRIMER" } → vide Pate/Recette/RecetteLigne/
+ *                                      Produit/Commande (jamais User/Session/Import) — protégé
+ *   GET  /api/commandes             — pâtes → produits → quantités par jour — protégé
+ *   PUT  /api/commandes             — { produitId, jour, quantite } — protégé
+ *   GET  /api/production/:jour      — fiches du jour (regroupées par pâte, pesées arrondies) — protégé
+ *   GET  /api/recettes              — recettes en lecture seule — protégé
+ *   GET  /api/poids                 — poids unitaires + produits non rapprochés — protégé
+ *
+ * Toutes les routes /api/* sauf /api/auth/login exigent un token de session
+ * (Authorization: Bearer <token>), obtenu via /api/auth/login. Voir requireAuth.
  */
 
 import express, { type Request, type Response, type NextFunction } from 'express';
@@ -20,6 +31,10 @@ import { prisma } from './db.js';
 import { extractModel, validateImport } from './import/extract.js';
 import { applyImport } from './services/importer.js';
 import { fichesDuJour } from './domain/production.js';
+import { verifyPassword } from './auth/password.js';
+import { createSession, deleteSession } from './auth/session.js';
+import { requireAuth } from './middleware/require-auth.js';
+import { classifyWorkbook } from './ai/classify-workbook.js';
 
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
@@ -47,6 +62,50 @@ app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
 
+/* ---------------- Auth ---------------- */
+
+app.post(
+  '/api/auth/login',
+  wrap(async (req, res) => {
+    const { email, password } = (req.body ?? {}) as { email?: unknown; password?: unknown };
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      res.status(400).json({ error: 'email et password requis' });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    const ok = user ? await verifyPassword(user.password, password) : false;
+    if (!user || !ok) {
+      res.status(401).json({ error: 'Identifiants invalides' });
+      return;
+    }
+
+    const { id, expiresAt } = await createSession(user.id);
+    res.json({
+      token: id,
+      expiresAt,
+      user: { id: user.id, email: user.email, nom: user.nom },
+    });
+  })
+);
+
+// Tout ce qui suit sous /api/* exige une session valide.
+app.use('/api', requireAuth);
+
+app.post(
+  '/api/auth/logout',
+  wrap(async (req, res) => {
+    const header = req.headers.authorization ?? '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (token) await deleteSession(token);
+    res.json({ ok: true });
+  })
+);
+
+app.get('/api/auth/me', (req, res) => {
+  res.json(req.user);
+});
+
 /* ---------------- Import ---------------- */
 
 app.post(
@@ -60,7 +119,23 @@ app.post(
 
     const wb = XLSX.read(req.file.buffer, { type: 'buffer', cellFormula: true });
 
-    const model = extractModel(wb);
+    const { commandesSheet, poidsSheet } = (req.body ?? {}) as {
+      commandesSheet?: string;
+      poidsSheet?: string;
+    };
+
+    let model;
+    try {
+      model = extractModel(wb, { commandesSheet, poidsSheet });
+    } catch (e) {
+      // Échec de reconnaissance structurelle (feuille introuvable, etc.) :
+      // on le signale distinctement pour que le front propose l'analyse IA.
+      res.status(422).json({
+        error: e instanceof Error ? e.message : 'Structure du classeur non reconnue.',
+        needsAiHelp: true,
+      });
+      return;
+    }
     const validation = validateImport(wb);
 
     // garde-fou : si le moteur ne reproduit pas les valeurs Excel, on refuse
@@ -73,15 +148,75 @@ app.post(
       return;
     }
 
-    const imported = await applyImport(model, req.file.originalname, validation);
+    const imported = await applyImport(model, req.file.originalname, validation, req.user!.id);
     res.json({ importId: imported.id, report: model.report, validation });
+  })
+);
+
+app.post(
+  '/api/import/analyze',
+  upload.single('file'),
+  wrap(async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ error: 'Fichier manquant (champ "file")' });
+      return;
+    }
+    const wb = XLSX.read(req.file.buffer, { type: 'buffer', cellFormula: true });
+    try {
+      const sheets = await classifyWorkbook(wb);
+      res.json({ sheets });
+    } catch (e) {
+      res.status(502).json({
+        error: e instanceof Error ? e.message : "Échec de l'analyse IA.",
+      });
+    }
   })
 );
 
 app.get(
   '/api/imports',
   wrap(async (_req, res) => {
-    res.json(await prisma.import.findMany({ orderBy: { importedAt: 'desc' }, take: 20 }));
+    res.json(
+      await prisma.import.findMany({
+        orderBy: { importedAt: 'desc' },
+        take: 20,
+        include: { importedBy: { select: { id: true, nom: true, email: true } } },
+      })
+    );
+  })
+);
+
+/* ---------------- Administration ---------------- */
+
+// Vide le référentiel (pâtes, recettes, produits, commandes) — jamais les
+// comptes ni l'historique des imports. Exige une confirmation explicite dans
+// le corps de la requête en plus de l'authentification, pour éviter qu'un
+// appel accidentel (ou un script) ne déclenche la purge sans intention claire.
+app.post(
+  '/api/admin/reset-data',
+  wrap(async (req, res) => {
+    const { confirm } = (req.body ?? {}) as { confirm?: unknown };
+    if (confirm !== 'SUPPRIMER') {
+      res.status(400).json({ error: 'Confirmation manquante ou incorrecte.' });
+      return;
+    }
+
+    const deleted = await prisma.$transaction(async (tx) => {
+      const commandes = await tx.commande.deleteMany();
+      const ligneRecettes = await tx.recetteLigne.deleteMany();
+      const recettes = await tx.recette.deleteMany();
+      const produits = await tx.produit.deleteMany();
+      const pates = await tx.pate.deleteMany();
+      return {
+        commandes: commandes.count,
+        ligneRecettes: ligneRecettes.count,
+        recettes: recettes.count,
+        produits: produits.count,
+        pates: pates.count,
+      };
+    });
+
+    res.json({ ok: true, deleted });
   })
 );
 

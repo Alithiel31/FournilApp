@@ -77,7 +77,7 @@ export function arrondiFor(ingredient: string): number {
   return 50;
 }
 
-function sheetToRows(ws: XLSX.WorkSheet): unknown[][] {
+export function sheetToRows(ws: XLSX.WorkSheet): unknown[][] {
   if (!ws || !ws['!ref']) return [];
   const range = XLSX.utils.decode_range(ws['!ref']);
   const rows: unknown[][] = [];
@@ -94,13 +94,23 @@ function sheetToRows(ws: XLSX.WorkSheet): unknown[][] {
 
 /* ---------------- Extraction ---------------- */
 
-export function extractModel(wb: XLSX.WorkBook): ImportModel {
+/** Choix explicite de feuilles, en général confirmés par l'utilisateur après
+ *  une classification IA (voir src/ai/classify-workbook.ts) quand la détection
+ *  par nom échoue. Prioritaires sur la détection automatique quand fournis. */
+export interface ExtractOverrides {
+  commandesSheet?: string;
+  poidsSheet?: string;
+}
+
+export function extractModel(wb: XLSX.WorkBook, overrides?: ExtractOverrides): ImportModel {
   const report = { ok: [] as string[], warn: [] as string[] };
   const sheetNames = wb.SheetNames;
 
   /* --- Feuille Commandes : jours, sections (pâtes), produits --- */
-  const cmdName = sheetNames.find((s) => normalize(s).includes('commande'));
-  if (!cmdName) throw new Error('Aucune feuille « Commandes » trouvée dans le classeur.');
+  const cmdName =
+    overrides?.commandesSheet ?? sheetNames.find((s) => normalize(s).includes('commande'));
+  if (!cmdName || !sheetNames.includes(cmdName))
+    throw new Error('Aucune feuille « Commandes » trouvée dans le classeur.');
   const cmdRows = sheetToRows(wb.Sheets[cmdName]);
 
   let headerIdx = -1;
@@ -146,8 +156,10 @@ export function extractModel(wb: XLSX.WorkBook): ImportModel {
   report.ok.push(`${produits.length} produits, ${sections.length} pâtes (${sections.join(', ')})`);
 
   /* --- Feuille des poids unitaires --- */
-  const poidsName = sheetNames.find((s) => normalize(s).includes('poid'));
-  const poidsRows = poidsName ? sheetToRows(wb.Sheets[poidsName]) : [];
+  const poidsName =
+    overrides?.poidsSheet ?? sheetNames.find((s) => normalize(s).includes('poid'));
+  const poidsRows =
+    poidsName && sheetNames.includes(poidsName) ? sheetToRows(wb.Sheets[poidsName]) : [];
   const poidsList: { nom: string; pate: number; garniture: number }[] = [];
   for (const row of poidsRows) {
     if (typeof row[0] === 'string' && typeof row[1] === 'number') {

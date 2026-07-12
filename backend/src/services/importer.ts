@@ -8,7 +8,8 @@ import { arrondiFor, type ImportModel, type ValidationResult } from '../import/e
 export async function applyImport(
   model: ImportModel,
   fileName: string,
-  validation: ValidationResult
+  validation: ValidationResult,
+  importedById: number
 ) {
   return prisma.$transaction(async (tx) => {
     await tx.commande.deleteMany();
@@ -58,7 +59,7 @@ export async function applyImport(
     }
 
     return tx.import.create({
-      data: { fileName, rapport: { ...model.report, validation } as object },
+      data: { fileName, rapport: { ...model.report, validation } as object, importedById },
     });
   });
 }

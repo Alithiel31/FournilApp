@@ -11,18 +11,29 @@
   ];
   const isActive = (t: (typeof tabs)[number]) =>
     page.url.pathname.startsWith(t.match ?? t.href);
+
+  const isLogin = $derived(page.url.pathname.startsWith('/login'));
 </script>
 
 <div class="app">
+  {#if !isLogin}
+    <header>
+      <form method="POST" action="/logout">
+        <button type="submit" class="logout">Déconnexion</button>
+      </form>
+    </header>
+  {/if}
   <main>{@render children()}</main>
-  <nav>
-    {#each tabs as t (t.href)}
-      <a href={t.href} class:active={isActive(t)}>
-        <span class="icon">{t.icon}</span>
-        {t.label}
-      </a>
-    {/each}
-  </nav>
+  {#if !isLogin}
+    <nav>
+      {#each tabs as t (t.href)}
+        <a href={t.href} class:active={isActive(t)}>
+          <span class="icon">{t.icon}</span>
+          {t.label}
+        </a>
+      {/each}
+    </nav>
+  {/if}
 </div>
 
 <style>
@@ -39,6 +50,20 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 0 40px rgba(38, 34, 28, 0.08);
+  }
+  header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 16px 0;
+  }
+  .logout {
+    border: none;
+    background: none;
+    color: #8a8271;
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 4px;
   }
   main {
     flex: 1;

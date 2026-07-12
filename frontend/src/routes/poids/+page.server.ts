@@ -8,6 +8,6 @@ interface ProduitPoids {
   garniture: number;
 }
 
-export const load: PageServerLoad = async () => ({
-  produits: await api<ProduitPoids[]>('/api/poids'),
+export const load: PageServerLoad = async ({ cookies }) => ({
+  produits: await api<ProduitPoids[]>('/api/poids', undefined, cookies.get('session')),
 });

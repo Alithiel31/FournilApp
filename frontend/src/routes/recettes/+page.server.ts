@@ -14,6 +14,6 @@ interface Recette {
   lignes: LigneRecette[];
 }
 
-export const load: PageServerLoad = async () => ({
-  recettes: await api<Recette[]>('/api/recettes'),
+export const load: PageServerLoad = async ({ cookies }) => ({
+  recettes: await api<Recette[]>('/api/recettes', undefined, cookies.get('session')),
 });
