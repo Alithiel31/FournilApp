@@ -1,0 +1,46 @@
+# Orchestration complète : base de données, API, frontend PWA.
+#   docker compose up --build
+# Frontend : http://localhost:3000 · API : http://localhost:3001
+# En prod sur Caesura/Coolify : déployer backend/ et frontend/ comme deux
+# applications distinctes (chacune a son Dockerfile) et pointer DATABASE_URL
+# vers le PostgreSQL natif (port 5433) au lieu du service db.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fournil
+      POSTGRES_PASSWORD: motdepasse
+      POSTGRES_DB: fournil
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fournil"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://fournil:motdepasse@db:5432/fournil
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:3000,http://localhost:5173
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    environment:
+      API_URL: http://backend:3001
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:

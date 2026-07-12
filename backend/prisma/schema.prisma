@@ -1,0 +1,83 @@
+// Le tableur est le format d'injection ; PostgreSQL est la source de vérité applicative.
+// Chaque import xlsx remplace le référentiel (pâtes, recettes, poids) et initialise les commandes.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Pate {
+  id       Int       @id @default(autoincrement())
+  nom      String    @unique
+  ordre    Int       @default(0)
+  recette  Recette?
+  produits Produit[]
+}
+
+model Recette {
+  id      Int            @id @default(autoincrement())
+  pateId  Int            @unique
+  pate    Pate           @relation(fields: [pateId], references: [id], onDelete: Cascade)
+  base    Float // poids total de la recette de base (ligne "Total" du classeur)
+  feuille String // nom de la feuille d'origine, pour traçabilité
+  lignes  RecetteLigne[]
+}
+
+model RecetteLigne {
+  id         Int     @id @default(autoincrement())
+  recetteId  Int
+  recette    Recette @relation(fields: [recetteId], references: [id], onDelete: Cascade)
+  ingredient String
+  quantite   Float
+  arrondi    Float   @default(50) // pas de pesée (g) : sel 20, levure 5, farines/eau 50
+  ordre      Int     @default(0)
+}
+
+model Produit {
+  id        Int        @id @default(autoincrement())
+  nom       String     @unique
+  pateId    Int
+  pate      Pate       @relation(fields: [pateId], references: [id], onDelete: Cascade)
+  poidsPate Float? // g de pâte par pâton (null = non rapproché à l'import)
+  garniture Float      @default(0)
+  ordre     Int        @default(0)
+  commandes Commande[]
+}
+
+model Commande {
+  id        Int     @id @default(autoincrement())
+  produitId Int
+  produit   Produit @relation(fields: [produitId], references: [id], onDelete: Cascade)
+  jour      Int // 0 = lundi … 6 = dimanche
+  quantite  Float   @default(0)
+
+  @@unique([produitId, jour])
+}
+
+model Import {
+  id         Int      @id @default(autoincrement())
+  fileName   String
+  importedAt DateTime @default(now())
+  rapport    Json // { ok: string[], warn: string[], validation: {...} }
+}
+
+// --- Auth session (même approche que Fournée) ---
+
+model User {
+  id       Int       @id @default(autoincrement())
+  email    String    @unique
+  password String // hash argon2/bcrypt
+  nom      String
+  sessions Session[]
+}
+
+model Session {
+  id        String   @id
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+}

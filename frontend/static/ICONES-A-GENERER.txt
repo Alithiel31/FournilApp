@@ -1,0 +1,1 @@
+placeholder icônes PWA : générer icon-192.png, icon-512.png, icon-512-maskable.png, favicon.png
