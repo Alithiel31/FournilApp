@@ -28,30 +28,73 @@
 {/each}
 
 <style>
-  h1 { font-family: Georgia, serif; font-size: 24px; margin: 0 0 10px; }
-  .jours { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 16px; }
-  .jours button {
-    padding: 9px 0; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer;
-    border: 1px solid #e5dfd2; background: #fff; color: #8a8271;
+  h1 {
+    font-family: Georgia, serif;
+    font-size: 24px;
+    margin: 0 0 10px;
   }
-  .jours button.active { background: #c4771c; border-color: #c4771c; color: #fff; }
+  .jours {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-bottom: 16px;
+  }
+  .jours button {
+    padding: 9px 0;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid #e5dfd2;
+    background: #fff;
+    color: #8a8271;
+  }
+  .jours button.active {
+    background: #c4771c;
+    border-color: #c4771c;
+    color: #fff;
+  }
   .section {
-    font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px;
-    color: #8a8271; font-weight: 700; margin: 14px 0 6px 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #8a8271;
+    font-weight: 700;
+    margin: 14px 0 6px 4px;
   }
   .produit {
-    display: flex; align-items: center; gap: 10px;
-    background: #fff; border: 1px solid #e5dfd2; border-radius: 14px;
-    padding: 10px 12px; margin-bottom: 7px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid #e5dfd2;
+    border-radius: 14px;
+    padding: 10px 12px;
+    margin-bottom: 7px;
   }
-  .nom { flex: 1; font-weight: 700; font-size: 14px; }
+  .nom {
+    flex: 1;
+    font-weight: 700;
+    font-size: 14px;
+  }
   .qte {
-    width: 60px; text-align: center; font-size: 17px; font-weight: 700;
-    font-family: 'Courier New', monospace; border: 1.5px solid #c4771c;
-    border-radius: 10px; padding: 7px 2px; background: #fbf3e6;
+    width: 60px;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    border: 1.5px solid #c4771c;
+    border-radius: 10px;
+    padding: 7px 2px;
+    background: #fbf3e6;
   }
   .ok {
-    width: 38px; height: 38px; border-radius: 12px; cursor: pointer;
-    border: 1px solid #e5dfd2; background: #f7f4ee; font-weight: 700;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 1px solid #e5dfd2;
+    background: #f7f4ee;
+    font-weight: 700;
   }
 </style>

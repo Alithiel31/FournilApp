@@ -7,7 +7,9 @@
   // SvelteKit, c'est à nous d'enregistrer le service worker sur le client
   // (le lien manifest est ajouté dans app.html).
   if (browser) {
-    import('virtual:pwa-register/svelte').then(({ useRegisterSW }) => useRegisterSW({ immediate: true }));
+    import('virtual:pwa-register/svelte').then(({ useRegisterSW }) =>
+      useRegisterSW({ immediate: true })
+    );
   }
 
   const tabs = [
@@ -15,10 +17,9 @@
     { href: '/production/lundi', match: '/production', icon: '🔥', label: 'Production' },
     { href: '/recettes', icon: '📖', label: 'Recettes' },
     { href: '/poids', icon: '⚖', label: 'Poids' },
-    { href: '/import', icon: '⬆', label: 'Import' }
+    { href: '/import', icon: '⬆', label: 'Import' },
   ];
-  const isActive = (t: (typeof tabs)[number]) =>
-    page.url.pathname.startsWith(t.match ?? t.href);
+  const isActive = (t: (typeof tabs)[number]) => page.url.pathname.startsWith(t.match ?? t.href);
 
   const isLogin = $derived(page.url.pathname.startsWith('/login'));
 </script>
@@ -108,6 +109,10 @@
     font-weight: 700;
     border-top-color: #c4771c;
   }
-  .icon { font-size: 20px; }
-  nav a:not(.active) .icon { filter: grayscale(1) opacity(0.6); }
+  .icon {
+    font-size: 20px;
+  }
+  nav a:not(.active) .icon {
+    filter: grayscale(1) opacity(0.6);
+  }
 </style>

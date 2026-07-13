@@ -49,8 +49,8 @@
 
 <h1>Import</h1>
 <p class="intro">
-  Injecte le classeur Excel (commandes, recettes, poids). Chaque import remplace entièrement
-  le référentiel.
+  Injecte le classeur Excel (commandes, recettes, poids). Chaque import remplace entièrement le
+  référentiel.
 </p>
 
 <form
@@ -113,17 +113,8 @@
   {/if}
 
   <div class="actions">
-    <button
-      class="submit"
-      type="submit"
-      formaction="?/import"
-      disabled={uploading || analyzing}
-    >
-      {uploading
-        ? 'Import en cours…'
-        : form?.classification
-          ? 'Confirmer et importer'
-          : 'Importer'}
+    <button class="submit" type="submit" formaction="?/import" disabled={uploading || analyzing}>
+      {uploading ? 'Import en cours…' : form?.classification ? 'Confirmer et importer' : 'Importer'}
     </button>
     {#if form?.needsAiHelp}
       <button class="ai" type="submit" formaction="?/analyze" disabled={uploading || analyzing}>
@@ -150,8 +141,9 @@
     <strong>Import réussi</strong>
     {#if form.validation}
       <p class="detail">
-        Validation : {form.validation.matches}/{form.validation.evaluated} formules reproduites
-        ({pct(form.validation)}%)
+        Validation : {form.validation.matches}/{form.validation.evaluated} formules reproduites ({pct(
+          form.validation
+        )}%)
       </p>
     {/if}
     {#if form.report?.ok?.length}
@@ -202,9 +194,8 @@
   {#if showReset}
     <div class="danger-body">
       <p>
-        Vide définitivement les pâtes, recettes, produits et commandes de la base. L'historique
-        des imports et les comptes utilisateurs ne sont pas touchés. Cette action est
-        irréversible.
+        Vide définitivement les pâtes, recettes, produits et commandes de la base. L'historique des
+        imports et les comptes utilisateurs ne sont pas touchés. Cette action est irréversible.
       </p>
       <form
         method="POST"
@@ -244,83 +235,284 @@
 </div>
 
 <style>
-  h1 { font-family: Georgia, serif; font-size: 24px; margin: 0 0 6px; }
-  h2 { font-family: Georgia, serif; font-size: 18px; margin: 22px 0 10px; }
-  .intro { font-size: 13px; color: #8a8271; margin: 0 0 16px; line-height: 1.4; }
-
-  form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-  .dropzone {
-    position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px;
-    padding: 28px 16px; border: 2px dashed #e5dfd2; border-radius: 16px; background: #fff;
-    cursor: pointer; text-align: center;
+  h1 {
+    font-family: Georgia, serif;
+    font-size: 24px;
+    margin: 0 0 6px;
   }
-  .dropzone.has-file { border-color: #c4771c; background: #fbf3e6; }
-  .dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .dropzone .icon { font-size: 28px; }
-  .dropzone .label { font-size: 13px; font-weight: 600; color: #8a8271; }
-  .dropzone.has-file .label { color: #c4771c; }
+  h2 {
+    font-family: Georgia, serif;
+    font-size: 18px;
+    margin: 22px 0 10px;
+  }
+  .intro {
+    font-size: 13px;
+    color: #8a8271;
+    margin: 0 0 16px;
+    line-height: 1.4;
+  }
 
-  .actions { display: flex; flex-direction: column; gap: 8px; }
-  .submit, .ai {
-    padding: 12px; border-radius: 12px; border: none; font-weight: 700; font-size: 15px;
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .dropzone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 28px 16px;
+    border: 2px dashed #e5dfd2;
+    border-radius: 16px;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+  }
+  .dropzone.has-file {
+    border-color: #c4771c;
+    background: #fbf3e6;
+  }
+  .dropzone input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
     cursor: pointer;
   }
-  .submit { background: #c4771c; color: #fff; }
-  .ai { background: #fff; color: #c4771c; border: 1px solid #c4771c; }
-  .submit:disabled, .ai:disabled { opacity: 0.6; cursor: default; }
+  .dropzone .icon {
+    font-size: 28px;
+  }
+  .dropzone .label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #8a8271;
+  }
+  .dropzone.has-file .label {
+    color: #c4771c;
+  }
+
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .submit,
+  .ai {
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .submit {
+    background: #c4771c;
+    color: #fff;
+  }
+  .ai {
+    background: #fff;
+    color: #c4771c;
+    border: 1px solid #c4771c;
+  }
+  .submit:disabled,
+  .ai:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
 
   .classification {
-    background: #fbf3e6; border: 1px solid #e9c68f; border-radius: 14px; padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 10px; font-size: 13px;
+    background: #fbf3e6;
+    border: 1px solid #e9c68f;
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
   }
-  .classification-intro { margin: 0; color: #8a5a1c; font-weight: 600; }
-  .champ { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #8a8271; }
-  .champ select, .champ input { padding: 8px; border-radius: 8px; border: 1px solid #e5dfd2; font-size: 13px; }
-  .classification-detail { margin: 0; padding-left: 18px; color: #8a8271; }
-  .classification-detail li { margin-bottom: 2px; }
+  .classification-intro {
+    margin: 0;
+    color: #8a5a1c;
+    font-weight: 600;
+  }
+  .champ {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #8a8271;
+  }
+  .champ select,
+  .champ input {
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #e5dfd2;
+    font-size: 13px;
+  }
+  .classification-detail {
+    margin: 0;
+    padding-left: 18px;
+    color: #8a8271;
+  }
+  .classification-detail li {
+    margin-bottom: 2px;
+  }
 
-  .banner { border-radius: 14px; padding: 12px 14px; margin-bottom: 18px; font-size: 13px; }
-  .banner strong { display: block; font-size: 14px; margin-bottom: 4px; }
-  .banner p { margin: 0; }
-  .banner .detail { margin-top: 4px; }
-  .banner.erreur { background: #faedea; border: 1px solid #a33224; color: #a33224; }
-  .banner.succes { background: #edf5ef; border: 1px solid #4a7c59; color: #2f5a3d; }
-  .banner ul { margin: 6px 0 0; padding-left: 18px; }
-  .banner ul.warn li { color: #a3691f; }
+  .banner {
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    font-size: 13px;
+  }
+  .banner strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .banner p {
+    margin: 0;
+  }
+  .banner .detail {
+    margin-top: 4px;
+  }
+  .banner.erreur {
+    background: #faedea;
+    border: 1px solid #a33224;
+    color: #a33224;
+  }
+  .banner.succes {
+    background: #edf5ef;
+    border: 1px solid #4a7c59;
+    color: #2f5a3d;
+  }
+  .banner ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+  }
+  .banner ul.warn li {
+    color: #a3691f;
+  }
 
-  .historique { background: #fff; border: 1px solid #e5dfd2; border-radius: 16px; overflow: hidden; }
+  .historique {
+    background: #fff;
+    border: 1px solid #e5dfd2;
+    border-radius: 16px;
+    overflow: hidden;
+  }
   .ligne {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 16px; border-bottom: 1px dashed #e5dfd2; gap: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px dashed #e5dfd2;
+    gap: 10px;
   }
-  .ligne:last-child { border-bottom: none; }
-  .fichier { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .nom { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .date { font-size: 11px; color: #8a8271; }
-  .badge { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 8px; white-space: nowrap; }
-  .badge.ok { background: #edf5ef; color: #4a7c59; }
-  .badge.warn { background: #fbf1e3; color: #a3691f; }
-  .vide { text-align: center; color: #8a8271; margin-top: 10px; font-size: 13px; }
+  .ligne:last-child {
+    border-bottom: none;
+  }
+  .fichier {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .nom {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .date {
+    font-size: 11px;
+    color: #8a8271;
+  }
+  .badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+  .badge.ok {
+    background: #edf5ef;
+    color: #4a7c59;
+  }
+  .badge.warn {
+    background: #fbf1e3;
+    color: #a3691f;
+  }
+  .vide {
+    text-align: center;
+    color: #8a8271;
+    margin-top: 10px;
+    font-size: 13px;
+  }
 
-  .danger-zone { margin-top: 28px; border-top: 1px dashed #e5dfd2; padding-top: 14px; }
+  .danger-zone {
+    margin-top: 28px;
+    border-top: 1px dashed #e5dfd2;
+    padding-top: 14px;
+  }
   .danger-toggle {
-    background: none; border: none; padding: 0; font-size: 12px; color: #a33224;
-    cursor: pointer; font-weight: 700;
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 12px;
+    color: #a33224;
+    cursor: pointer;
+    font-weight: 700;
   }
   .danger-body {
-    margin-top: 10px; background: #faedea; border: 1px solid #e3b3a8; border-radius: 14px;
-    padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 13px;
+    margin-top: 10px;
+    background: #faedea;
+    border: 1px solid #e3b3a8;
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 13px;
   }
-  .danger-body p { margin: 0; color: #7a2c1f; line-height: 1.4; }
-  .danger-body form { margin: 0; gap: 8px; }
+  .danger-body p {
+    margin: 0;
+    color: #7a2c1f;
+    line-height: 1.4;
+  }
+  .danger-body form {
+    margin: 0;
+    gap: 8px;
+  }
   .danger-body input {
-    padding: 8px; border-radius: 8px; border: 1px solid #e3b3a8; font-size: 13px;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid #e3b3a8;
+    font-size: 13px;
   }
   .danger-submit {
-    padding: 10px; border-radius: 10px; border: none; background: #a33224; color: #fff;
-    font-weight: 700; font-size: 14px; cursor: pointer;
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    background: #a33224;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
   }
-  .danger-submit:disabled { opacity: 0.5; cursor: default; }
-  .danger-error { color: #a33224; font-weight: 600; margin: 0; }
-  .danger-success { color: #2f5a3d; font-weight: 600; margin: 0; }
+  .danger-submit:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .danger-error {
+    color: #a33224;
+    font-weight: 600;
+    margin: 0;
+  }
+  .danger-success {
+    color: #2f5a3d;
+    font-weight: 600;
+    margin: 0;
+  }
 </style>

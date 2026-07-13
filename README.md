@@ -61,6 +61,7 @@ L'application tourne sur un **Raspberry Pi** (`caesura`) et est exposée publiqu
 En accès direct sur le Pi (debug), ports décalés `3002` (frontend) / `3003` (API) — `3000`/`3001`/`5433` étant déjà pris par d'autres projets sur ce Pi.
 Contrairement à QcWeather (SPA statique servie par nginx), le frontend reste servi par **Node** (`adapter-node`, SSR + form actions) : pas d'étape nginx possible ici sans perdre le rendu serveur.
 Le tunnel Cloudflare gère le **HTTPS** et le nom de domaine — aucun certificat à gérer manuellement.
+Le stage de build frontend utilise `npm install` (pas `npm ci`) : le `package-lock.json`, généré sur poste de dev Windows x64, ne référence pas toujours le binaire natif Rollup de la plateforme du Pi (`arm64-musl`) — bug connu [npm/cli#4828](https://github.com/npm/cli/issues/4828). `npm install` force une résolution fraîche des dépendances optionnelles côté build.
 
 ---
 
@@ -204,7 +205,8 @@ Flux de données :
 
 **Le moteur de formules n'est pas utilisé au runtime** — décision clé d'architecture. Il sert uniquement de **validateur d'import** : à chaque injection, il exécute les formules réelles du classeur et vérifie que l'extraction est cohérente. Les calculs de l'app vivent dans `backend/src/domain`, en TypeScript testé.
 
-**PWA** — `registerType: autoUpdate`, manifest standalone/portrait (thème `#C4771C`), precache du shell + `StaleWhileRevalidate` sur les référentiels. Icônes à générer dans `frontend/static/`.
+**PWA** — `registerType: autoUpdate`, manifest standalone/portrait (thème `#C4771C`), precache du shell + `StaleWhileRevalidate` sur les référentiels. Icônes générées dans `frontend/static/`.
+`@vite-pwa/sveltekit` génère `manifest.webmanifest`/`sw.js` mais n'injecte rien dans le HTML (pas d'équivalent Vue/React) : le `<link rel="manifest">` est posé à la main dans `app.html`, et l'enregistrement du service worker se fait côté client dans `+layout.svelte` via `virtual:pwa-register/svelte` (guardé par `browser` pour ne pas casser le SSR).
 
 ---
 

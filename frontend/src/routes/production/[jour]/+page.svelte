@@ -51,50 +51,138 @@
 {/each}
 
 <style>
-  h1 { font-family: Georgia, serif; font-size: 24px; margin: 0 0 10px; }
-  .jours { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-bottom: 16px; }
-  .jours a {
-    padding: 9px 0; border-radius: 10px; font-size: 12px; font-weight: 700;
-    text-align: center; text-decoration: none;
-    border: 1px solid #e5dfd2; background: #fff; color: #8a8271;
+  h1 {
+    font-family: Georgia, serif;
+    font-size: 24px;
+    margin: 0 0 10px;
   }
-  .jours a.active { background: #c4771c; border-color: #c4771c; color: #fff; }
+  .jours {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-bottom: 16px;
+  }
+  .jours a {
+    padding: 9px 0;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    border: 1px solid #e5dfd2;
+    background: #fff;
+    color: #8a8271;
+  }
+  .jours a.active {
+    background: #c4771c;
+    border-color: #c4771c;
+    color: #fff;
+  }
   .carte {
-    background: #fff; border: 1px solid #e5dfd2; border-radius: 16px;
-    margin-bottom: 14px; overflow: hidden;
+    background: #fff;
+    border: 1px solid #e5dfd2;
+    border-radius: 16px;
+    margin-bottom: 14px;
+    overflow: hidden;
   }
   .entete {
-    padding: 12px 16px; display: flex; justify-content: space-between;
-    align-items: baseline; border-bottom: 1px solid #e5dfd2; background: #edf2f8;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1px solid #e5dfd2;
+    background: #edf2f8;
   }
-  .pate { font-family: Georgia, serif; font-size: 17px; font-weight: 700; }
-  .total, .num, .grammes { font-family: 'Courier New', monospace; font-weight: 700; }
-  .total { font-size: 14px; color: #274c77; }
-  .detail { padding: 8px 16px; border-bottom: 1px solid #e5dfd2; }
+  .pate {
+    font-family: Georgia, serif;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .total,
+  .num,
+  .grammes {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+  }
+  .total {
+    font-size: 14px;
+    color: #274c77;
+  }
+  .detail {
+    padding: 8px 16px;
+    border-bottom: 1px solid #e5dfd2;
+  }
   .ligne-detail {
-    display: flex; justify-content: space-between;
-    font-size: 13px; padding: 3px 0; color: #8a8271;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 3px 0;
+    color: #8a8271;
   }
-  .pesee { padding: 10px 16px 14px; }
+  .pesee {
+    padding: 10px 16px 14px;
+  }
   .titre-pesee {
-    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
-    color: #8a8271; margin-bottom: 8px; font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #8a8271;
+    margin-bottom: 8px;
+    font-weight: 700;
   }
   .item {
-    display: flex; align-items: center; gap: 10px; width: 100%;
-    padding: 9px 10px; margin-bottom: 5px; border-radius: 10px;
-    border: 1px solid #e5dfd2; background: #f7f4ee; cursor: pointer; text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    margin-bottom: 5px;
+    border-radius: 10px;
+    border: 1px solid #e5dfd2;
+    background: #f7f4ee;
+    cursor: pointer;
+    text-align: left;
   }
-  .item.fait { border-color: #4a7c59; background: #edf5ef; }
+  .item.fait {
+    border-color: #4a7c59;
+    background: #edf5ef;
+  }
   .case {
-    width: 20px; height: 20px; border-radius: 6px; flex-shrink: 0;
-    border: 1.5px solid #8a8271; color: #fff; font-size: 13px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    border: 1.5px solid #8a8271;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .fait .case { background: #4a7c59; border-color: #4a7c59; }
-  .nom { flex: 1; font-size: 14px; font-weight: 600; }
-  .fait .nom { text-decoration: line-through; color: #8a8271; }
-  .grammes { font-size: 16px; color: #274c77; }
-  .fait .grammes { color: #8a8271; }
-  .vide { text-align: center; color: #8a8271; margin-top: 30px; }
+  .fait .case {
+    background: #4a7c59;
+    border-color: #4a7c59;
+  }
+  .nom {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .fait .nom {
+    text-decoration: line-through;
+    color: #8a8271;
+  }
+  .grammes {
+    font-size: 16px;
+    color: #274c77;
+  }
+  .fait .grammes {
+    color: #8a8271;
+  }
+  .vide {
+    text-align: center;
+    color: #8a8271;
+    margin-top: 30px;
+  }
 </style>
