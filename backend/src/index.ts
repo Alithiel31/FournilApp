@@ -25,7 +25,9 @@
 
 import express, { type Request, type Response, type NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
 import * as XLSX from 'xlsx';
 import { prisma } from './db.js';
 import { extractModel, validateImport } from './import/extract.js';
@@ -40,13 +42,42 @@ const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dim
 
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? true }));
+// API pure sans pages HTML servies : CSP par défaut désactivée (pas de contenu
+// à protéger contre l'injection), mais on garde les autres en-têtes de sécurité
+// (X-Content-Type-Options, X-Frame-Options, etc.). CORP en cross-origin, sinon
+// le frontend (autre origine) ne pourrait plus consommer l'API.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
+
+// CORS fermé par défaut : sans CORS_ORIGIN explicite, aucune origine n'est autorisée
+// (mieux vaut un déploiement mal configuré qui bloque tout qu'un qui accepte tout).
+const corsOrigins = process.env.CORS_ORIGIN?.split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+if (!corsOrigins?.length) {
+  console.warn('CORS_ORIGIN non défini : aucune origine cross-origin ne sera autorisée.');
+}
+app.use(cors({ origin: corsOrigins?.length ? corsOrigins : false }));
 app.use(express.json());
 
 // multer en mémoire : le xlsx est lu directement depuis le buffer, jamais écrit sur disque
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+// Anti brute-force sur le login : 10 tentatives / 15 min par IP, tous statuts confondus.
+// Compte aussi les succès (standard pour ce type de garde-fou) pour rester simple à auditer.
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de tentatives de connexion. Réessaie dans quelques minutes.' },
 });
 
 /** Enveloppe les handlers async pour propager les erreurs au middleware d'erreur
@@ -66,6 +97,7 @@ app.get('/health', (_req, res) => {
 
 app.post(
   '/api/auth/login',
+  loginLimiter,
   wrap(async (req, res) => {
     const { email, password } = (req.body ?? {}) as { email?: unknown; password?: unknown };
     if (typeof email !== 'string' || typeof password !== 'string') {
