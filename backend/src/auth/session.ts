@@ -28,7 +28,10 @@ export async function createSession(userId: number) {
  *  Purge la session expirée au passage. */
 export async function validateSession(token: string) {
   const hashed = hashToken(token);
-  const session = await prisma.session.findUnique({ where: { id: hashed }, include: { user: true } });
+  const session = await prisma.session.findUnique({
+    where: { id: hashed },
+    include: { user: true },
+  });
   if (!session) return null;
   if (session.expiresAt < new Date()) {
     await prisma.session.delete({ where: { id: hashed } }).catch(() => {});
