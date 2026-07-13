@@ -11,8 +11,11 @@ CMD ["npm", "run", "dev", "--", "--host"]
 # ── build : vite build → build/ (adapter-node) ────────────────────────────
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+COPY package.json ./
+# package-lock.json généré sur Windows x64 : structure incomplète pour les
+# deps optionnelles arm64-musl (bug npm/cli#4828). On ignore ce lockfile et on
+# laisse npm résoudre un arbre frais et correct pour la plateforme du build.
+RUN npm install
 COPY . .
 RUN npm run build
 

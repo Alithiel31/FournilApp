@@ -94,7 +94,7 @@ beforeEach(async () => {
 });
 
 describe('GET /health', () => {
-  it("répond 200 sans authentification", async () => {
+  it('répond 200 sans authentification', async () => {
     const res = await request(app).get('/health');
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ ok: true });
@@ -123,7 +123,9 @@ describe('POST /api/auth/login', () => {
   });
 
   it('renvoie un token pour des identifiants valides', async () => {
-    const res = await request(app).post('/api/auth/login').send({ email: EMAIL, password: PASSWORD });
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: EMAIL, password: PASSWORD });
     expect(res.status).toBe(200);
     expect(typeof res.body.token).toBe('string');
     expect(res.body.user).toMatchObject({ email: EMAIL, nom: 'Ana' });

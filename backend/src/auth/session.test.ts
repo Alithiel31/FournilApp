@@ -75,7 +75,11 @@ describe('validateSession', () => {
   it('renvoie null et purge une session expirée', async () => {
     const { id: token } = await createSession(1);
     // Manipule directement le faux store pour simuler l'expiration.
-    store.set(hashOf(token), { id: hashOf(token), userId: 1, expiresAt: new Date(Date.now() - 1000) });
+    store.set(hashOf(token), {
+      id: hashOf(token),
+      userId: 1,
+      expiresAt: new Date(Date.now() - 1000),
+    });
 
     expect(await validateSession(token)).toBeNull();
     expect(store.has(hashOf(token))).toBe(false); // purgée

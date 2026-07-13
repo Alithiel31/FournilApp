@@ -1,6 +1,14 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { page } from '$app/state';
   let { children } = $props();
+
+  // @vite-pwa/sveltekit ne fait qu'émettre manifest.webmanifest / sw.js : côté
+  // SvelteKit, c'est à nous d'enregistrer le service worker sur le client
+  // (le lien manifest est ajouté dans app.html).
+  if (browser) {
+    import('virtual:pwa-register/svelte').then(({ useRegisterSW }) => useRegisterSW({ immediate: true }));
+  }
 
   const tabs = [
     { href: '/commandes', icon: '✎', label: 'Commandes' },

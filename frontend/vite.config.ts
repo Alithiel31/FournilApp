@@ -7,6 +7,11 @@ export default defineConfig({
     sveltekit(),
     SvelteKitPWA({
       registerType: 'autoUpdate',
+      // permet de tester le SW/manifest avec `npm run dev` (désactivé par défaut par le plugin)
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
       manifest: {
         name: 'Le Fournil',
         short_name: 'Fournil',
@@ -29,7 +34,10 @@ export default defineConfig({
       },
       workbox: {
         // offline-first : recettes et poids consultables sans réseau en fournil
-        globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
+        globPatterns: ['**/*.{js,css,html,png,svg,woff2,woff,json}'],
+        // le nouveau SW prend la main immédiatement (cohérent avec registerType: autoUpdate)
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /\/api\/(recettes|poids)/,
