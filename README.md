@@ -59,7 +59,7 @@ docker compose exec backend npm run create-user:prod -- "email@example.com" "mot
 
 L'application tourne sur un **Raspberry Pi** (`caesura`) et est exposée publiquement via un **tunnel Cloudflare** (aucun port à ouvrir sur le routeur) sur `https://fournilapp.alithiel31.dev`.
 En accès direct sur le Pi (debug), ports décalés `3002` (frontend) / `3003` (API) — `3000`/`3001`/`5433` étant déjà pris par d'autres projets sur ce Pi.
-Contrairement à QcWeather (SPA statique servie par nginx), le frontend reste servi par **Node** (`adapter-node`, SSR + form actions) : pas d'étape nginx possible ici sans perdre le rendu serveur.
+Le frontend reste servi par **Node** (`adapter-node`, SSR + form actions) : pas d'étape nginx possible ici sans perdre le rendu serveur.
 Le tunnel Cloudflare gère le **HTTPS** et le nom de domaine — aucun certificat à gérer manuellement.
 Le stage de build frontend utilise `npm install` (pas `npm ci`) : le `package-lock.json`, généré sur poste de dev Windows x64, ne référence pas toujours le binaire natif Rollup de la plateforme du Pi (`arm64-musl`) — bug connu [npm/cli#4828](https://github.com/npm/cli/issues/4828). `npm install` force une résolution fraîche des dépendances optionnelles côté build.
 
